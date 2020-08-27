@@ -1,7 +1,9 @@
 //jshint esversion:6
+require('dotenv').config()
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const encrypt = require("mongoose-encryption");
 
 const ejs = require("ejs");
 
@@ -18,10 +20,14 @@ mongoose.connect('mongodb://localhost:27017/userDB', {
   useNewUrlParser: true, useUnifiedTopology: true
 });
 
-const userSchema = {
+const userSchema = new mongoose.Schema({
   email: String,
   password: String
-};
+});
+
+// console.log(process.env.API_KEY);
+
+userSchema.plugin(encrypt, {secret:process.env.SECRET, encryptedFields: ["password"]});
 
 const User = mongoose.model("User",userSchema);
 
@@ -62,12 +68,14 @@ app.post("/login",function(req,res){
   User.findOne({email:email},function(err,userFound){
     if(err){
       console.log(err);
-    } else {
+    } else if(userFound){
       if(userFound.password === password){
         res.render("secrets");
       } else {
         res.send("<h3>sorry!!! your Email and password are not matching</h3>");
       }
+    } else {
+      res.send("oops!! you are not registered");
     }
   });
 });
